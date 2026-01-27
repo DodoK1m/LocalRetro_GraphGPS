@@ -1,8 +1,8 @@
 # LocalRetro
-Implementation of Retrosynthesis Prediction with LocalRetro developed by prof. Yousung Jung group at KAIST (contact: ysjn@kaist.ac.kr).
+Implementation of Retrosynthesis Prediction by LocalRetro developed by Yousung Jung's group at KAIST (now in SNU).
 
 ## Developer
-Shuan Chen (contact: shuankaist@kaist.ac.kr)<br>
+Shuan Chen (shuan75@snu.ac.kr)<br>
 
 ## Requirements
 * Python (version >= 3.6) 
@@ -53,7 +53,6 @@ Currently, we are cleaning up the codes, and the codes will be uploaded back aft
 
 ## Publication
 Shuan Chen and Yousung Jung. Deep Retrosynthetic Reaction Prediction using Local Reactivity and Global Attention, [JACS Au 2021](https://pubs.acs.org/doi/10.1021/jacsau.1c00246).
-
 
 
 ## Usage
@@ -115,10 +114,20 @@ The decoded reactants will be saved at
 `LocalRetro/outputs/decoded_prediction/LocalRetro_USPTO_50K.txt`<br>and 
 `LocalRetro/outputs/decoded_prediction_class/LocalRetro_USPTO_50K.txt`<br>
 
-#### Exact match accuracy (%) on USPTO-50K dataset 
+## Citation
+```bibtex
+@article{chen2021deep,
+  title={Deep retrosynthetic reaction prediction using local reactivity and global attention},
+  author={Chen, Shuan and Jung, Yousung},
+  journal={JACS Au},
+  volume={1},
+  number={10},
+  pages={1612--1620},
+  year={2021},
+  publisher={ACS Publications}
+}
+```
 
-| Stereo  | Top-1 | Top-3 | Top-5 | Top-10 | Top-50 |
-| --------| ---- | ---- | ---- | ---- | ---- |
-| Unaware | 52.6 | 75.3 | 83.5 | 90.2 | 95.7 |
-|  Aware  | 54.0 | 77.3 | 85.7 | 92.5 | 98.4 |
+## License
+This project is covered under the **CC BY-NC-SA 4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International)** license. See the [LICENSE](LICENSE) file for details.
 
