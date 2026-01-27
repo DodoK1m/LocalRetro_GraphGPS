@@ -1,7 +1,5 @@
 import os, sys, re, copy
-import json
 import pandas as pd
-from collections import defaultdict
 
 import rdkit 
 from rdkit import Chem, RDLogger 
@@ -12,22 +10,7 @@ RDLogger.DisableLog('rdApp.*')
 sys.path.append('../')
 from Extract_from_train_data import build_template_extractor, get_reaction_template, get_full_template
     
-def get_edit_smarts_retro(smiles):
-    mol = Chem.MolFromSmiles(smiles)
-    A = [a.GetSymbol() for a in mol.GetAtoms()]
-    B = []
-    for bond in mol.GetBonds():
-        bond_smart = bond.GetSmarts()
-        if bond_smart == '':
-            if bond.GetIsAromatic():
-                bond_smart = '@'
-            else:
-                bond_smart = '-'
-        u, v = bond.GetBeginAtom().GetIdx(), bond.GetEndAtom().GetIdx()
-        B += ['%s%s%s' % (A[u], bond_smart, A[v]), '%s%s%s' % (A[v], bond_smart, A[u])]
-    return A, B
-
-def get_edit_site_retro(smiles):
+def get_edit_site_retro(smiles): # the function in Run_preprocessing.py
     mol = Chem.MolFromSmiles(smiles)
     A = [a for a in range(mol.GetNumAtoms())]
     B = []
@@ -66,7 +49,6 @@ def labeling_dataset(args, split, template_dicts, template_infos, extractor):
     reagents = []
     labels = []
     frequency = []
-    site_templates = defaultdict(set)
     success = 0
     
     for i, reaction in enumerate(rxns):
@@ -123,17 +105,12 @@ def labeling_dataset(args, split, template_dicts, template_infos, extractor):
                 success += 1
                 if args['retro']:
                     atom_sites, bond_sites = get_edit_site_retro(product)
-                    atom_smarts, bond_smarts = get_edit_smarts_retro(product)
                     for edit_type, edit in edits.items():
                         for e in edit:
                             if edit_type in ['A', 'R']:
-                                edit_idx, template_class = atom_sites.index(e), template_dicts['atom'][template_H]
-                                rxn_labels.append(('a', edit_idx, template_class))
-                                site_templates[atom_smarts[edit_idx]].add(int(template_class))
+                                rxn_labels.append(('a', atom_sites.index(e), template_dicts['atom'][template_H]))
                             else:
-                                edit_idx, template_class = bond_sites.index(e), template_dicts['bond'][template_H]
-                                rxn_labels.append(('b', edit_idx, template_class))
-                                site_templates[bond_smarts[edit_idx]].add(int(template_class))
+                                rxn_labels.append(('b', bond_sites.index(e), template_dicts['bond'][template_H]))
                     reactants.append(reactant)
                     products.append(product)
                     reagents.append(reagent)       
@@ -166,7 +143,6 @@ def labeling_dataset(args, split, template_dicts, template_infos, extractor):
                 
             if i % 100 == 0:
                 print ('\r Processing %s %s data..., success %s data (%s/%s)' % (args['dataset'], split, success, i, len(rxns)), end='', flush=True)
-#                 print (site_templates)
         else:
             print ('\nReaction # %s has too many edits (%s)...may be wrong mapping!' % (i, edit_n))
             reactants.append(reactant)
@@ -177,13 +153,9 @@ def labeling_dataset(args, split, template_dicts, template_infos, extractor):
             
     print ('\nDerived tempaltes cover %.3f of %s data reactions' % ((success/len(rxns)), split))
     
-    split_df = pd.DataFrame({'Reactants': reactants, 'Products': products, 'Reagents': reagents, 'Labels': labels, 'Frequency': frequency})
-    split_df.to_csv('%s/preprocessed_%s.csv' % (args['output_dir'], split))
-    
-    with open('%s/site_template.json' % args['output_dir'], 'w') as f:
-        site_templates = {k: sorted(list(v)) for k,v in site_templates.items()}
-        json.dump(site_templates, f)
-    return split_df
+    df = pd.DataFrame({'Reactants': reactants, 'Products': products, 'Reagents': reagents, 'Labels': labels, 'Frequency': frequency})
+    df.to_csv('%s/preprocessed_%s.csv' % (args['output_dir'], split))
+    return df
 
 def make_simulate_output(args, split = 'test'):
     df = pd.read_csv('%s/preprocessed_%s.csv' % (args['output_dir'], split))
