@@ -25,7 +25,15 @@ pip install dgl
 pip install dgllife
 ```
 
-## Update 
+## Update
+
+### 2026.01 update
+The license has been updated to **CC BY-NC-SA 4.0** (Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International). This means:
+- **Academic use**: Free to use, share, and adapt with attribution
+- **Commercial use**: Not permitted without prior written approval from the copyright holder
+- **Derivative works**: Must be shared under the same license
+
+We encourage academic use of this model, but we wish this will not be used for any commercial used without our permission. For commercial licensing inquiries, please contact the developer.
 
 ### 2023.07.10 update
 To address the issue raised from the coommnuty (see also [#15](https://github.com/kaist-amsg/LocalRetro/issues/15))., the function `get_atom_pair` in `model_utils.py` is updated. 
