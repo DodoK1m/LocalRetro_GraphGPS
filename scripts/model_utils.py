@@ -23,7 +23,10 @@ def unbatch_mask(bg, atom_feats, bond_feats):
     sg.edata['e'] = bond_feats
     gs = dgl.unbatch(sg)
     for g in gs:
-        e_feats = torch.cat((g.ndata['h'], g.edata['e']), dim = 0)
+        #print("g_h",g.ndata['h'].size())
+        #print("g_e", g.edata['e'].size())
+        e_feats = torch.cat((g.ndata['h'],g.edata['e']), dim = 0)
+        #print("e_feats", e_feats.size())
         mask = torch.ones(e_feats.size()[0], dtype=torch.uint8)
         edit_feats.append(e_feats)
         masks.append(mask)
@@ -32,6 +35,31 @@ def unbatch_mask(bg, atom_feats, bond_feats):
     masks = pad_sequence(masks, batch_first=True, padding_value= 0)
     
     return edit_feats, masks 
+    
+def unbatch_mask_2(bg, atom_feats, bond_feats):
+    edit_feats = []
+    masks = []
+    feat_dim = atom_feats.size(-1)
+    sg = bg.remove_self_loop()
+    sg.ndata['h'] = atom_feats
+    sg.edata['e'] = bond_feats
+    gs = dgl.unbatch(sg)
+    for g in gs:
+        #print("g_h",g.ndata['h'].size())
+        #print("g_e", g.edata['e'].size())
+        e_feats = g.ndata['h']
+        #print("e_feats", e_feats.size())
+        mask = torch.ones(e_feats.size()[0], dtype=torch.uint8)
+        edit_feats.append(e_feats)
+        masks.append(mask)
+    
+    edit_atom_feats = pad_sequence(edit_feats, batch_first=True, padding_value= 0)
+    masks = pad_sequence(masks, batch_first=True, padding_value= 0)
+    
+    return edit_atom_feats, masks     
+    
+    
+    
     
 def unbatch_feats(bg, edit_feats):
     sg = bg.remove_self_loop()
@@ -43,6 +71,15 @@ def unbatch_feats(bg, edit_feats):
         bond_feats.append(edit_feats[i][g.num_nodes():g.num_nodes()+g.num_edges()])
     return torch.cat(atom_feats, dim = 0), torch.cat(bond_feats, dim = 0)
 
+def unbatch_feats_2(bg, edit_feats):
+    sg = bg.remove_self_loop()
+    gs = dgl.unbatch(sg)
+    atom_feats = []
+    #bond_feats = []
+    for i, g in enumerate(gs):
+        atom_feats.append(edit_feats[i][:g.num_nodes()])
+        #bond_feats.append(edit_feats[i][g.num_nodes():g.num_nodes()+g.num_edges()])
+    return torch.cat(atom_feats, dim = 0)
 
 class MultiHeadAttention(nn.Module):
     def __init__(self, heads, d_model, dropout = 0.1):
@@ -115,6 +152,69 @@ class Global_Reactivity_Attention(nn.Module):
         for _ in range(n_layers):
             att_stack.append(MultiHeadAttention(heads, d_model, dropout))
             pff_stack.append(FeedForward(d_model, activation, dropout))
+        self.att_stack = nn.ModuleList(att_stack)
+        self.pff_stack = nn.ModuleList(pff_stack)
+        
+    def forward(self, x, mask):
+        scores = []
+        for n in range(self.n_layers):
+            score, x = self.att_stack[n](x, mask)
+            x = self.pff_stack[n](x)
+            scores.append(score)
+        return scores, x
+
+class Global_Reactivity_Attention_2(nn.Module):
+    def __init__(self, d_model, heads, n_layers = 1, dropout = 0.1):
+        super(Global_Reactivity_Attention_2, self).__init__()
+        self.n_layers = n_layers
+        att_stack = []
+        pff_stack = []
+        #for _ in range(n_layers):
+        att_stack.append(MultiHeadAttention(heads, d_model, dropout))
+        #    pff_stack.append(FeedForward(d_model, dropout))
+        self.att_stack = nn.ModuleList(att_stack)
+        #self.pff_stack = nn.ModuleList(pff_stack)
+        
+    def forward(self, x, mask):
+        scores = []
+        #for n in range(self.n_layers):
+        score, x = self.att_stack[0](x, mask)
+        #x = self.pff_stack[n](x)
+        scores.append(score)
+        return scores, x
+
+
+
+class GraphGPS_L(nn.Module):
+    def __init__(self, d_model, heads, n_layers = 1, dropout = 0.1):
+        super(Global_Reactivity_Attention, self).__init__()
+        self.n_layers = n_layers
+        att_stack = []
+        pff_stack = []
+        for _ in range(n_layers):
+            att_stack.append(MultiHeadAttention(heads, d_model, dropout))
+            pff_stack.append(FeedForward(d_model, dropout))
+        self.att_stack = nn.ModuleList(att_stack)
+        self.pff_stack = nn.ModuleList(pff_stack)
+        
+    def forward(self, x, mask):
+        scores = []
+        for n in range(self.n_layers):
+            score, x = self.att_stack[n](x, mask)
+            x = self.pff_stack[n](x)
+            scores.append(score)
+        return scores, x
+
+
+class GraphGPS_edit(nn.Module):
+    def __init__(self, d_model, heads, n_layers = 3, dropout = 0.1):
+        super(GraphGPS_edit, self).__init__() 
+        self.n_layers = n_layers
+        gps_stack = []
+        #pff_stack = []
+        for _ in range(n_layers):
+            att_stack.append(MultiHeadAttention(heads, d_model, dropout))
+            pff_stack.append(FeedForward(d_model, dropout))
         self.att_stack = nn.ModuleList(att_stack)
         self.pff_stack = nn.ModuleList(pff_stack)
         

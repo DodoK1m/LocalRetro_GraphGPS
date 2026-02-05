@@ -33,6 +33,7 @@ class USPTODataset(object):
         if os.path.exists(self.cache_file_path) and load:
             print('Loading previously saved dgl graphs...')
             self.graphs, label_dict = load_graphs(self.cache_file_path)
+            self.graphs = [g.long() for g in self.graphs]   # <-- key line
         else:
             print('Processing dgl graphs from scratch...')
             self.graphs = []

@@ -16,6 +16,38 @@ def get_id_template(a, class_n):
     return (edit_idx, template)
 
 def output2edit(out, top_num):
+    # out: [N, class_n] (logits or probabilities)
+    class_n = out.size(-1)
+
+    flat = out.reshape(-1)  # torch tensor
+    # index i corresponds to (edit_idx = i // class_n, template = i % class_n)
+
+    # Exclude template==0
+    idx_all = torch.arange(flat.numel(), device=flat.device, dtype=torch.long)
+    template_id = idx_all % class_n
+    mask = template_id != 0
+
+    flat_masked = flat[mask]
+    idx_masked = idx_all[mask]  # torch.long
+
+    # Top-k
+    k = min(top_num, flat_masked.numel())
+    top_vals, top_pos = torch.topk(flat_masked, k=k, largest=True)
+
+    top_idx = idx_masked[top_pos]          # torch.long indices in flattened space
+    edit_idx = (top_idx // class_n).long() # torch.long
+    template = (top_idx % class_n).long()  # torch.long
+
+    # Return Python ints if your downstream expects plain ints
+    selected_edit = [(int(e.item()), int(t.item())) for e, t in zip(edit_idx, template)]
+    selected_proba = [float(v.item()) for v in top_vals]
+    return selected_edit, selected_proba
+
+
+
+
+"""
+def output2edit(out, top_num):
     class_n = out.size(-1)
     readout = out.cpu().detach().numpy()
     readout = readout.reshape(-1)
@@ -26,6 +58,8 @@ def output2edit(out, top_num):
     selected_proba = [readout[a] for a in output_rank]
      
     return selected_edit, selected_proba
+"""
+
     
 def combined_edit(graph, atom_out, bond_out, top_num):
     edit_id_a, edit_proba_a = output2edit(atom_out, top_num)

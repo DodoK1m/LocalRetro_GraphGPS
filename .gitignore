@@ -1,5 +1,33 @@
-__pycache__
-*__pycache__/*
+# Python
+__pycache__/
+*.pyc
+*.pyo
 
-.ipynb_checkpoints
-*.ipynb_checkpoints/*
+# Conda / venv
+env/
+venv/
+*.conda
+*.egg-info/
+
+# PyTorch
+*.pth
+*.pt
+
+# DGL / cache
+*.bin
+*.pkl
+cache/
+graphs/
+
+# Data
+data/
+datasets/
+
+# Logs
+*.log
+
+# OS
+.DS_Store
+
+
+
